@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Phone, MapPin, Bed, Bath, Car, MessageCircle } from 'lucide-react';
+import { Phone, MapPin, Bed, Bath, Car, MessageCircle, X } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { About } from './components/About';
@@ -31,9 +31,20 @@ function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const locations = useMemo(() => {
-    const locs = Array.from(new Set(PROJECTS.map(p => p.location)));
+    const reachableProjects = activeCategory === 'All' 
+      ? PROJECTS 
+      : PROJECTS.filter(p => p.type === activeCategory);
+    
+    const locs = Array.from(new Set(reachableProjects.map(p => p.location))).sort();
     return ['All', ...locs];
-  }, []);
+  }, [activeCategory]);
+
+  // Effect to reset location if it becomes invalid for the selected category
+  React.useEffect(() => {
+    if (activeLocation !== 'All' && !locations.includes(activeLocation)) {
+      setActiveLocation('All');
+    }
+  }, [locations, activeLocation]);
 
   const filteredProjects = useMemo(() => {
     return PROJECTS.filter(p => {
@@ -98,7 +109,49 @@ function App() {
                   Modern <br /> Architecture
                 </h2>
               </div>
-              <div className="flex flex-col items-end gap-6">
+              <div className="flex flex-col items-start md:items-end gap-8 w-full md:w-auto">
+                <div className="w-full md:w-auto overflow-x-auto no-scrollbar">
+                  <div className="flex flex-col items-start md:items-end gap-4 min-w-max md:min-w-0">
+                    <div className="flex flex-col items-start md:items-end gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Category</span>
+                      <div className="flex flex-wrap gap-x-6 gap-y-3 justify-start md:justify-end">
+                        {['All', 'Houses', 'Duplex', 'Residential', 'Apartments', 'Land Only'].map(cat => (
+                          <button 
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={cn(
+                              "text-[10px] font-black uppercase tracking-widest border-b-2 pb-1 transition-all whitespace-nowrap",
+                              activeCategory === cat ? "border-brand-accent text-brand-accent scale-105" : "border-transparent text-white/40 hover:text-brand-accent"
+                            )}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-start md:items-end gap-2 border-t border-white/5 pt-4 w-full">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Location</span>
+                      <div className="flex flex-wrap gap-x-3 gap-y-2 justify-start md:justify-end">
+                        {locations.map(loc => (
+                          <button 
+                            key={loc}
+                            onClick={() => setActiveLocation(loc)}
+                            className={cn(
+                              "text-[9px] font-bold uppercase tracking-widest transition-all py-1.5 px-3 rounded-full border whitespace-nowrap",
+                              activeLocation === loc 
+                                ? "bg-brand-accent border-brand-accent text-brand-dark shadow-lg shadow-brand-accent/20" 
+                                : "border-white/10 text-white/30 hover:border-brand-accent/50 hover:text-brand-accent"
+                            )}
+                          >
+                            {loc}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {(activeCategory !== 'All' || activeLocation !== 'All' || searchQuery !== '' || keywordsFilter !== '') && (
                   <button 
                     onClick={() => {
@@ -110,41 +163,11 @@ function App() {
                       setBathsFilter('Any');
                       setCarsFilter('Any');
                     }}
-                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-brand-accent text-brand-dark hover:bg-white transition-colors px-6 py-3 rounded-full shadow-lg"
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-white/10 text-white hover:bg-brand-accent hover:text-brand-dark transition-all px-5 py-2.5 rounded-full border border-white/10"
                   >
-                    <X className="w-4 h-4" /> Reset All Filters
+                    <X className="w-3.5 h-3.5" /> Reset Filters
                   </button>
                 )}
-                <div className="flex flex-wrap gap-x-8 gap-y-4 justify-end">
-                  {['All', 'Houses', 'Duplex', 'Residential', 'Apartments', 'Land Only'].map(cat => (
-                    <button 
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={cn(
-                        "text-[10px] font-black uppercase tracking-widest border-b-2 pb-1 transition-colors",
-                        activeCategory === cat ? "border-brand-accent text-brand-accent" : "border-transparent text-white/40 hover:text-brand-accent"
-                      )}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-x-6 gap-y-2 justify-end">
-                  {locations.map(loc => (
-                    <button 
-                      key={loc}
-                      onClick={() => setActiveLocation(loc)}
-                      className={cn(
-                        "text-[10px] font-bold uppercase tracking-widest transition-colors py-1 px-3 rounded-full border",
-                        activeLocation === loc 
-                          ? "bg-brand-accent border-brand-accent text-brand-dark" 
-                          : "border-white/10 text-white/30 hover:border-brand-accent hover:text-brand-accent"
-                      )}
-                    >
-                      {loc}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -266,6 +289,7 @@ function App() {
           setCarsFilter(filters.cars);
           setIsSearchOpen(false);
         }}
+        showBar={false}
       />
       
       {/* Project Details Modal */}
